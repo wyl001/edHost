@@ -17,9 +17,9 @@ pub struct HostEntry {
 fn backup_hosts() -> Result<String,String> {
     let hosts_path = default_hosts_path();
 
-    let deskTop = dirs::desktop_dir().ok_or("无法获取桌面目录")?;
+    let desk_top = dirs::desktop_dir().ok_or("无法获取桌面目录")?;
 
-    let bak_path = deskTop.with_file_name(format!(
+    let bak_path = desk_top.with_file_name(format!(
         "hosts.bak.{}",
         SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs()
     ));
@@ -90,6 +90,7 @@ fn default_hosts_path() -> PathBuf {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![load_hosts, backup_hosts])
         .run(tauri::generate_context!())

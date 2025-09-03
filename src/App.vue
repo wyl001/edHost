@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref, reactive, onMounted } from "vue";
-import { invoke } from "@tauri-apps/api/core";
+import {onMounted, reactive, ref} from "vue";
+import {invoke} from "@tauri-apps/api/core";
+import { message } from "@tauri-apps/plugin-dialog";
 
 interface HostEntry {
   ip: string;
@@ -16,24 +17,51 @@ const hostForm = reactive({
 const hosts = ref<HostEntry[]>([]);
 const status = ref('就绪');
 
-const addHostEntry = async (event: Event) => {
-  event.preventDefault();
-  
+const addHostEntry = async () => {
+  console.log(hostForm);
+
   if (!hostForm.ip || !hostForm.hostname) {
     status.value = '请填写IP地址和主机名';
+    await message("请填写IP地址和主机名", {
+      title: '输入不完整',
+      kind: 'error'
+    });
     return;
   }
-  
-  hosts.value.push({
-    ip: hostForm.ip,
-    hostname: hostForm.hostname,
-    enabled: true
-  });
-  
-  hostForm.ip = '';
-  hostForm.hostname = '';
-  status.value = '已添加新映射';
+
+  if (!isValidIPv4(hostForm.ip) || !isValidDomain(hostForm.hostname)) {
+    await message("IP地址或域名格式不正确！", {
+      title: '格式错误',
+      kind: 'error'
+    });
+    return;
+  }
+
+  try {
+    // 这里添加保存主机记录的逻辑
+    // await invoke('add_host_entry', { hostForm });
+
+    hosts.value.push({
+      ip: hostForm.ip,
+      hostname: hostForm.hostname,
+      enabled: true
+    });
+
+    hostForm.ip = '';
+    hostForm.hostname = '';
+    status.value = '已添加新映射';
+    await message("主机记录添加成功！", {
+      title: '成功',
+      kind: 'info'
+    });
+  } catch (error) {
+    await message(`添加失败: ${error}`, {
+      title: '错误',
+      kind: 'error'
+    });
+  }
 };
+
 
 const removeHostEntry = (index: number) => {
   hosts.value.splice(index, 1);
@@ -60,11 +88,15 @@ const saveChanges = async () => {
 const backupHosts = async () => {
   try {
     status.value = '备份中...';
-    await invoke('backup_hosts');
+    const bak_path = await invoke('backup_hosts');
     status.value = '备份成功';
+    console.log(bak_path)
+    alert("备份成功,地址："+bak_path)
+    return;
   } catch (error) {
     status.value = '备份失败';
     console.error('备份失败:', error);
+    alert('备份失败:'+error)
   }
 };
 
@@ -72,17 +104,30 @@ const backupHosts = async () => {
 const reloadHosts = async () => {
   try {
     status.value = '刷新中...';
-    const loadedHosts = await invoke<HostEntry[]>('load_hosts');
-    hosts.value = loadedHosts;
+    hosts.value = await invoke<HostEntry[]>('load_hosts');
     status.value = '刷新成功';
+    await message("刷新成功",{title:"成功",kind:"info"})
   } catch (error) {
     status.value = '刷新失败';
     console.error('刷新失败:', error);
+    await message("刷新失败",{title:"成功",kind:"info"})
   }
 };
 
+function isValidIPv4(ip: string): boolean {
+  const ipv4Regex =
+      /^(25[0-5]|2[0-4]\d|1\d{2}|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d{2}|[1-9]?\d)){3}$/;
+  return ipv4Regex.test(ip);
+}
+function isValidDomain(domain: string): boolean {
+  const domainRegex =
+      /^(?=.{1,253}$)(?!-)([a-zA-Z0-9-]{1,63}(?<!-)\.)+[a-zA-Z]{2,}$/;
+  return domainRegex.test(domain);
+}
+
+
 onMounted(() => {
-  reloadHosts();
+  // reloadHosts();
 });
 </script>
 
