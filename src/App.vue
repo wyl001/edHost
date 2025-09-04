@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<script lang="ts" setup>
 import {onMounted, reactive, ref} from "vue";
 import {invoke} from "@tauri-apps/api/core";
 import { message } from "@tauri-apps/plugin-dialog";
@@ -18,16 +18,6 @@ const hosts = ref<HostEntry[]>([]);
 const status = ref('就绪');
 
 const addHostEntry = async () => {
-  console.log(hostForm);
-
-  if (!hostForm.ip || !hostForm.hostname) {
-    status.value = '请填写IP地址和主机名';
-    await message("请填写IP地址和主机名", {
-      title: '输入不完整',
-      kind: 'error'
-    });
-    return;
-  }
 
   if (!isValidIPv4(hostForm.ip) || !isValidDomain(hostForm.hostname)) {
     await message("IP地址或域名格式不正确！", {
@@ -38,8 +28,8 @@ const addHostEntry = async () => {
   }
 
   try {
-    // 这里添加保存主机记录的逻辑
-    // await invoke('add_host_entry', { hostForm });
+    // 调用Tauri命令添加主机记录
+    await invoke('add_host_entry', { hostForm });
 
     hosts.value.push({
       ip: hostForm.ip,
@@ -114,6 +104,10 @@ const reloadHosts = async () => {
   }
 };
 
+const load_once = async () =>{
+  hosts.value = await invoke<HostEntry[]>('load_hosts');
+}
+
 function isValidIPv4(ip: string): boolean {
   const ipv4Regex =
       /^(25[0-5]|2[0-4]\d|1\d{2}|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d{2}|[1-9]?\d)){3}$/;
@@ -127,7 +121,7 @@ function isValidDomain(domain: string): boolean {
 
 
 onMounted(() => {
-  // reloadHosts();
+  load_once();
 });
 </script>
 
@@ -136,8 +130,8 @@ onMounted(() => {
     <header>
       <h1>Host文件管理器</h1>
       <div>
-        <button @click="backupHosts" class="btn btn-warning">备份</button>
-        <button @click="reloadHosts" class="btn btn-primary">刷新</button>
+        <button class="btn btn-warning" @click="backupHosts">备份</button>
+        <button class="btn btn-primary" @click="reloadHosts">刷新</button>
       </div>
     </header>
     <div class="card">
@@ -148,13 +142,13 @@ onMounted(() => {
         <form @submit="addHostEntry">
           <div class="form-group">
             <label for="ip">IP地址</label>
-            <input type="text" id="ip" v-model="hostForm.ip" placeholder="例如: 127.0.0.1" required>
+            <input id="ip" v-model="hostForm.ip" placeholder="例如: 127.0.0.1" required type="text">
           </div>
           <div class="form-group">
             <label for="hostname">主机名</label>
-            <input type="text" id="hostname" v-model="hostForm.hostname" placeholder="例如: example.local" required>
+            <input id="hostname" v-model="hostForm.hostname" placeholder="例如: example.local" required type="text">
           </div>
-          <button type="submit" class="btn btn-success">添加</button>
+          <button class="btn btn-success" type="submit">添加</button>
         </form>
       </div>
     </div>
@@ -182,10 +176,10 @@ onMounted(() => {
             <td>{{ entry.ip }}</td>
             <td>{{ entry.hostname }}</td>
             <td>
-              <button @click="toggleHostEntry(index)" class="btn btn-sm" :class="entry.enabled ? 'btn-warning' : 'btn-success'">
+              <button :class="entry.enabled ? 'btn-warning' : 'btn-success'" class="btn btn-sm" @click="toggleHostEntry(index)">
                 {{ entry.enabled ? '禁用' : '启用' }}
               </button>
-              <button @click="removeHostEntry(index)" class="btn btn-sm btn-danger">删除</button>
+              <button class="btn btn-sm btn-danger" @click="removeHostEntry(index)">删除</button>
             </td>
           </tr>
           </tbody>
@@ -193,7 +187,7 @@ onMounted(() => {
       </div>
       <div class="status-bar">
         <span>{{ status }}</span>
-        <button @click="saveChanges" class="btn btn-primary">保存更改</button>
+        <button class="btn btn-primary" @click="saveChanges">保存更改</button>
       </div>
     </div>
 

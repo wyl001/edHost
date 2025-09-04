@@ -1,16 +1,22 @@
 use std::fs;
-use serde::Serialize;
-use std::fs::File;
-use std::io::{self, BufRead};
+use serde::{Deserialize, Serialize};
+use std::fs::{File, OpenOptions};
+use std::io::{self, BufRead, Write};
 use std::path::PathBuf;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-#[derive(Debug,Serialize)]
+#[derive(Debug,Serialize,Deserialize)]
 pub struct HostEntry {
     ip: String,
     hostname: String,
     enabled: bool
+}
+
+#[derive(Debug,Serialize,Deserialize)]
+pub struct HostForm {
+    ip: String,
+    hostname: String
 }
 
 #[tauri::command]
@@ -39,6 +45,65 @@ fn load_hosts() -> Vec<HostEntry> {
         vec![]
     })
 }
+
+#[tauri::command]
+fn add_host_entry(host_form: HostForm) -> Result<(), String> {
+    let mut entries = load_hosts();
+    
+    // 检查是否已存在相同的映射
+    if entries.iter().any(|e| e.ip == host_form.ip && e.hostname == host_form.hostname) {
+        return Err(format!("该映射已存在：ip->{},hostName->{}", host_form.ip, host_form.hostname));
+    }
+    let new_data= vec![HostEntry {
+        ip: host_form.ip.clone(),
+        hostname: host_form.hostname.clone(),
+        enabled: true,
+    }];
+
+    let result = save_hosts_internal(&new_data);
+    result
+}
+
+#[tauri::command]
+fn save_hosts(entries: Vec<HostEntry>) -> Result<(), String> {
+    save_hosts_internal(&entries)
+}
+
+fn save_hosts_internal(entries: &[HostEntry]) -> Result<(), String> {
+    let hosts_path = default_hosts_path();
+    
+    let mut content = String::new();
+    content.push_str("# Hosts file managed by edHost\n");
+    content.push_str("# Generated automatically\n\n");
+    
+    // 按IP分组hostname
+    let mut ip_to_hosts: std::collections::HashMap<String, Vec<String>> = std::collections::HashMap::new();
+    
+    for entry in entries {
+        if entry.enabled {
+            ip_to_hosts
+                .entry(entry.ip.clone())
+                .or_insert_with(Vec::new)
+                .push(entry.hostname.clone());
+        }
+    }
+    
+    for (ip, hostnames) in ip_to_hosts {
+        // IP和hostname之间用空格分隔
+        content.push_str(&format!("{} {}\n", ip, hostnames.join(" ")));
+    }
+    let mut file = OpenOptions::new()
+        .append(true)
+        .open(&hosts_path)
+        .map_err(|e| format!("打开文件错误：{}", e))?;
+
+    file.write_all(content.as_bytes())
+        .map_err(|e| format!("写入文件错误: {}", e))?;
+
+    Ok(())
+}
+
+
 fn read_file(path: &PathBuf) -> Result<Vec<HostEntry>, String> {
     let file = File::open(path).map_err(|e| e.to_string())?;
     let reader = io::BufReader::new(file);
@@ -92,7 +157,7 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![load_hosts, backup_hosts])
+        .invoke_handler(tauri::generate_handler![load_hosts, backup_hosts, add_host_entry, save_hosts])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
