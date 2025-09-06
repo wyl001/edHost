@@ -134,63 +134,68 @@ onMounted(() => {
         <button class="btn btn-primary" @click="reloadHosts">刷新</button>
       </div>
     </header>
-    <div class="card">
-      <div class="card-header">
-        <h2>添加新映射</h2>
-      </div>
-      <div class="card-body">
-        <form @submit="addHostEntry">
-          <div class="form-group">
-            <label for="ip">IP地址</label>
-            <input id="ip" v-model="hostForm.ip" placeholder="例如: 127.0.0.1" required type="text">
+    
+    <div class="main-content">
+      <div class="card hosts-card">
+        <div class="card-header">
+          <h2>当前Host条目 ({{ hosts.length }})</h2>
+        </div>
+        <div class="card-body">
+          <div class="table-container">
+            <table>
+              <thead>
+              <tr>
+                <th>状态</th>
+                <th>IP地址</th>
+                <th>主机名</th>
+                <th>操作</th>
+              </tr>
+              </thead>
+              <tbody>
+              <tr v-for="(entry, index) in hosts" :key="index">
+                <td>
+                  <span :class="{ 'text-success': entry.enabled, 'text-muted': !entry.enabled }">
+                    {{ entry.enabled ? '✓' : '✗' }}
+                  </span>
+                </td>
+                <td>{{ entry.ip }}</td>
+                <td>{{ entry.hostname }}</td>
+                <td>
+                  <button :class="entry.enabled ? 'btn-warning' : 'btn-success'" class="btn btn-sm" @click="toggleHostEntry(index)">
+                    {{ entry.enabled ? '禁用' : '启用' }}
+                  </button>
+                  <button class="btn btn-sm btn-danger" @click="removeHostEntry(index)">删除</button>
+                </td>
+              </tr>
+              </tbody>
+            </table>
           </div>
-          <div class="form-group">
-            <label for="hostname">主机名</label>
-            <input id="hostname" v-model="hostForm.hostname" placeholder="例如: example.local" required type="text">
-          </div>
-          <button class="btn btn-success" type="submit">添加</button>
-        </form>
+        </div>
+        <div class="status-bar">
+          <span>{{ status }}</span>
+          <button class="btn btn-primary" @click="saveChanges">保存更改</button>
+        </div>
       </div>
-    </div>
-    <div class="card">
-      <div class="card-header">
-        <h2>当前Host条目</h2>
-      </div>
-      <div class="card-body">
-        <table>
-          <thead>
-          <tr>
-            <th>状态</th>
-            <th>IP地址</th>
-            <th>主机名</th>
-            <th>操作</th>
-          </tr>
-          </thead>
-          <tbody>
-          <tr v-for="(entry, index) in hosts" :key="index">
-            <td>
-              <span :class="{ 'text-success': entry.enabled, 'text-muted': !entry.enabled }">
-                {{ entry.enabled ? '✓' : '✗' }}
-              </span>
-            </td>
-            <td>{{ entry.ip }}</td>
-            <td>{{ entry.hostname }}</td>
-            <td>
-              <button :class="entry.enabled ? 'btn-warning' : 'btn-success'" class="btn btn-sm" @click="toggleHostEntry(index)">
-                {{ entry.enabled ? '禁用' : '启用' }}
-              </button>
-              <button class="btn btn-sm btn-danger" @click="removeHostEntry(index)">删除</button>
-            </td>
-          </tr>
-          </tbody>
-        </table>
-      </div>
-      <div class="status-bar">
-        <span>{{ status }}</span>
-        <button class="btn btn-primary" @click="saveChanges">保存更改</button>
-      </div>
-    </div>
 
+      <div class="card add-card">
+        <div class="card-header">
+          <h2>添加新映射</h2>
+        </div>
+        <div class="card-body">
+          <form @submit="addHostEntry">
+            <div class="form-group">
+              <label for="ip">IP地址</label>
+              <input id="ip" v-model="hostForm.ip" placeholder="例如: 127.0.0.1" required type="text">
+            </div>
+            <div class="form-group">
+              <label for="hostname">主机名</label>
+              <input id="hostname" v-model="hostForm.hostname" placeholder="例如: example.local" required type="text">
+            </div>
+            <button class="btn btn-success" type="submit">添加</button>
+          </form>
+        </div>
+      </div>
+    </div>
   </main>
 </template>
 
@@ -198,34 +203,35 @@ onMounted(() => {
 .container {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 20px;
+  padding: 10px;
 }
 
 header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 30px;
-  padding: 20px;
+  margin-bottom: 15px;
+  padding: 12px 16px;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border-radius: 12px;
+  border-radius: 8px;
   color: white;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 header h1 {
   margin: 0;
-  font-size: 2rem;
+  font-size: 1.5rem;
   font-weight: 600;
 }
 
 .btn {
-  margin-left: 10px;
-  padding: 10px 20px;
+  margin-left: 8px;
+  padding: 8px 16px;
   border: none;
-  border-radius: 8px;
+  border-radius: 6px;
   font-weight: 500;
-  transition: all 0.3s ease;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
   cursor: pointer;
 }
 
@@ -264,11 +270,11 @@ header h1 {
 
 .card {
   background: white;
-  border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-  margin-bottom: 30px;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  margin-bottom: 16px;
   overflow: hidden;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .card:hover {
@@ -278,23 +284,23 @@ header h1 {
 
 .card-header {
   background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-  padding: 20px;
+  padding: 12px 16px;
   border-bottom: 1px solid #dee2e6;
 }
 
 .card-header h2 {
   margin: 0;
   color: #495057;
-  font-size: 1.5rem;
+  font-size: 1.2rem;
   font-weight: 600;
 }
 
 .card-body {
-  padding: 30px;
+  padding: 16px;
 }
 
 .form-group {
-  margin-bottom: 20px;
+  margin-bottom: 12px;
   text-align: left;
 }
 
@@ -307,11 +313,11 @@ header h1 {
 
 .form-group input {
   width: 100%;
-  padding: 12px 16px;
-  border: 2px solid #e9ecef;
-  border-radius: 8px;
-  font-size: 1rem;
-  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  padding: 8px 12px;
+  border: 1px solid #e9ecef;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .form-group input:focus {
@@ -327,9 +333,10 @@ table {
 }
 
 th, td {
-  padding: 15px;
+  padding: 8px 12px;
   text-align: left;
   border-bottom: 1px solid #dee2e6;
+  font-size: 0.9rem;
 }
 
 th {
@@ -351,9 +358,9 @@ tr:hover {
 }
 
 .btn-sm {
-  padding: 5px 10px;
-  font-size: 0.875rem;
-  margin-right: 5px;
+  padding: 4px 8px;
+  font-size: 0.8rem;
+  margin-right: 4px;
 }
 
 .btn-danger {
@@ -371,9 +378,10 @@ tr:hover {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 20px;
+  padding: 12px 16px;
   background: #f8f9fa;
   border-top: 1px solid #dee2e6;
+  font-size: 0.9rem;
 }
 
 #statusInfo {
@@ -381,31 +389,70 @@ tr:hover {
   font-weight: 500;
 }
 
+.main-content {
+  display: grid;
+  grid-template-columns: 1fr 350px;
+  gap: 16px;
+  align-items: start;
+}
+
+.hosts-card {
+  grid-column: 1;
+}
+
+.add-card {
+  grid-column: 2;
+  position: sticky;
+  top: 20px;
+}
+
+.table-container {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+@media (max-width: 1024px) {
+  .main-content {
+    grid-template-columns: 1fr;
+  }
+  
+  .add-card {
+    position: static;
+  }
+}
+
 @media (max-width: 768px) {
   .container {
-    padding: 15px;
+    padding: 8px;
   }
   
   header {
     flex-direction: column;
-    gap: 15px;
+    gap: 12px;
     text-align: center;
+    margin-bottom: 12px;
   }
   
   header h1 {
-    font-size: 1.5rem;
+    font-size: 1.3rem;
   }
   
   .card-body {
-    padding: 20px;
+    padding: 12px;
   }
   
   table {
-    font-size: 0.9rem;
+    font-size: 0.85rem;
   }
   
   th, td {
-    padding: 10px;
+    padding: 6px 8px;
+  }
+  
+  .btn {
+    padding: 6px 12px;
+    font-size: 0.85rem;
+    margin-left: 6px;
   }
 }
 </style>

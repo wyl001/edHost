@@ -5,7 +5,6 @@ use std::io::{self, BufRead, Write};
 use std::path::PathBuf;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-// Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 #[derive(Debug,Serialize,Deserialize)]
 pub struct HostEntry {
     ip: String,
@@ -66,7 +65,32 @@ fn add_host_entry(host_form: HostForm) -> Result<(), String> {
 
 #[tauri::command]
 fn save_hosts(entries: Vec<HostEntry>) -> Result<(), String> {
-    save_hosts_internal(&entries)
+    let hosts_path = default_hosts_path();
+
+    let mut new_content = String::new();
+    new_content.push_str("# Hosts file managed by edHost\n");
+    new_content.push_str("# Generated automatically\n\n");
+
+    for entry in entries {
+        if entry.enabled {
+            new_content.push_str(format!("{} {} \n", entry.ip, entry.hostname).as_str());
+        } else {
+            new_content.push_str(format!("# {} {} \n", entry.ip, entry.hostname).as_str());
+        }
+    }
+    println!("{}", new_content);
+
+    // 写入文件
+    let mut file = OpenOptions::new()
+        .write(true)
+        .truncate(true)  // 清空文件内容再写入
+        .open(&hosts_path) // 将 String 转为 &str
+        .map_err(|e| format!("无法打开文件: {}", e))?;
+
+    file.write_all(new_content.as_bytes())
+        .map_err(|e| format!("写入文件错误: {}", e))?;
+
+    Ok(())
 }
 
 fn save_hosts_internal(entries: &[HostEntry]) -> Result<(), String> {
@@ -113,9 +137,10 @@ fn read_file(path: &PathBuf) -> Result<Vec<HostEntry>, String> {
     for line in reader.lines() {
         let line = line.map_err(|e| e.to_string())?;
         let line = line.trim();
+        let enable = !line.starts_with("#");
 
         // 跳过空行和注释
-        if line.is_empty() || line.starts_with('#') {
+        if line.is_empty() {
             continue;
         }
 
@@ -131,7 +156,7 @@ fn read_file(path: &PathBuf) -> Result<Vec<HostEntry>, String> {
             res.push(HostEntry {
                 ip: ip.clone(),
                 hostname: host.to_string(),
-                enabled: true,
+                enabled: enable,
             });
         }
     }

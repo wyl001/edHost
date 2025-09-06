@@ -13,7 +13,7 @@
     "windows": [
       {
         "title": "edhost",
-        "width": 800,
+        "width": 1268,
         "height": 600
       }
     ],
@@ -30,6 +30,8 @@
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
-    ]
+    ],
+    "windows": {
+    }
   }
 }
