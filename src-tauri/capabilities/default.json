@@ -7,6 +7,11 @@
     "core:default",
     "opener:default",
     "dialog:default",
-    "dialog:allow-message"
+    "dialog:allow-message",
+    "fs:allow-app-read",
+    {
+      "identifier": "fs:scope",
+      "allow": [{ "path": "$APPDATA" }, { "path": "$APPDATA/**" },{ "path": "/etc/hosts"}]
+    }
   ]
 }

@@ -881,10 +881,12 @@ name = "edhost"
 version = "0.1.0"
 dependencies = [
  "dirs 5.0.1",
+ "regex",
  "serde",
  "tauri",
  "tauri-build",
  "tauri-plugin-dialog",
+ "tauri-plugin-fs",
  "tauri-plugin-opener",
 ]
 

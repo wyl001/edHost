@@ -4,6 +4,7 @@ use std::fs::{File, OpenOptions};
 use std::io::{self, BufRead, Write};
 use std::path::PathBuf;
 use std::time::{SystemTime, UNIX_EPOCH};
+use regex::Regex;
 
 #[derive(Debug,Serialize,Deserialize)]
 pub struct HostEntry {
@@ -16,6 +17,23 @@ pub struct HostEntry {
 pub struct HostForm {
     ip: String,
     hostname: String
+}
+
+#[tauri::command]
+fn open_file() {
+    #[cfg(target_os = "windows")] {
+        std::process::Command::new("notepad")
+            .arg("C:\\Windows\\System32\\drivers\\etc\\hosts")
+            .spawn()
+            .unwrap();
+    }
+    #[cfg(target_os = "macos")] {
+        std::process::Command::new("open")
+            .arg("-e")
+            .arg("/etc/hosts")
+            .spawn()
+            .unwrap();
+    }
 }
 
 #[tauri::command]
@@ -47,7 +65,7 @@ fn load_hosts() -> Vec<HostEntry> {
 
 #[tauri::command]
 fn add_host_entry(host_form: HostForm) -> Result<(), String> {
-    let mut entries = load_hosts();
+    let entries = load_hosts();
     
     // 检查是否已存在相同的映射
     if entries.iter().any(|e| e.ip == host_form.ip && e.hostname == host_form.hostname) {
@@ -134,30 +152,34 @@ fn read_file(path: &PathBuf) -> Result<Vec<HostEntry>, String> {
 
     let mut res = Vec::new();
 
+    let ip_hostname_re = Regex::new(r"^\s*(\d+\.\d+\.\d+\.\d+)\s+([^\s#]+)\s*").unwrap(); // 匹配有效的映射规则
+    let comment_re = Regex::new(r"^\s*#\s*(\d+\.\d+\.\d+\.\d+)\s+([^\s#]+)\s*").unwrap(); // 匹配注释行中的映射规则
+
+
     for line in reader.lines() {
         let line = line.map_err(|e| e.to_string())?;
         let line = line.trim();
-        let enable = !line.starts_with("#");
 
         // 跳过空行和注释
         if line.is_empty() {
             continue;
         }
-
-        // 按空白切分
-        let parts: Vec<&str> = line.split_whitespace().collect();
-        if parts.len() < 2 {
-            continue; // 格式不正确，跳过
+        if line.starts_with("#") {
+            if let Some (caps) = comment_re.captures(&line){
+                res.push(HostEntry {
+                    ip: caps.get(1).map_or("", |m| m.as_str()).to_string(),
+                    hostname: caps.get(2).map_or("", |m| m.as_str()).to_string(),
+                    enabled: false
+                })
+            }
         }
 
-        let ip = parts[0].to_string();
-        // 一行可能有多个 hostname
-        for host in &parts[1..] {
+        if let Some (caps) = ip_hostname_re.captures(&line){
             res.push(HostEntry {
-                ip: ip.clone(),
-                hostname: host.to_string(),
-                enabled: enable,
-            });
+                ip: caps.get(1).map_or("", |m| m.as_str()).to_string(),
+                hostname: caps.get(2).map_or("", |m| m.as_str()).to_string(),
+                enabled: true
+            })
         }
     }
 
@@ -180,9 +202,10 @@ fn default_hosts_path() -> PathBuf {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![load_hosts, backup_hosts, add_host_entry, save_hosts])
+        .invoke_handler(tauri::generate_handler![load_hosts, backup_hosts, add_host_entry, save_hosts,open_file])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

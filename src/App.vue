@@ -2,6 +2,8 @@
 import {onMounted, reactive, ref} from "vue";
 import {invoke} from "@tauri-apps/api/core";
 import { message } from "@tauri-apps/plugin-dialog";
+import {BaseDirectory, exists} from "@tauri-apps/plugin-fs"
+import {openPath} from "@tauri-apps/plugin-opener"
 
 interface HostEntry {
   ip: string;
@@ -52,6 +54,9 @@ const addHostEntry = async () => {
   }
 };
 
+const openFile = async () =>{
+  await invoke('open_file')
+}
 
 const removeHostEntry = (index: number) => {
   hosts.value.splice(index, 1);
@@ -119,7 +124,6 @@ function isValidDomain(domain: string): boolean {
   return domainRegex.test(domain);
 }
 
-
 onMounted(() => {
   load_once();
 });
@@ -130,6 +134,7 @@ onMounted(() => {
     <header>
       <h1>Host文件管理器</h1>
       <div>
+        <button class="btn btn-info" @click="openFile">打开文件</button>
         <button class="btn btn-warning" @click="backupHosts">备份</button>
         <button class="btn btn-primary" @click="reloadHosts">刷新</button>
       </div>
