@@ -2,8 +2,6 @@
 import {onMounted, reactive, ref} from "vue";
 import {invoke} from "@tauri-apps/api/core";
 import { message } from "@tauri-apps/plugin-dialog";
-import {BaseDirectory, exists} from "@tauri-apps/plugin-fs"
-import {openPath} from "@tauri-apps/plugin-opener"
 
 interface HostEntry {
   ip: string;
