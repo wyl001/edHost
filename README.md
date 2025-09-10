@@ -1,7 +1,24 @@
-# Tauri + Vue + TypeScript
+# edHost - Host文件管理器
 
-This template should help get you started developing with Vue 3 and TypeScript in Vite. The template uses Vue 3 `<script setup>` SFCs, check out the [script setup docs](https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup) to learn more.
+基于Tauri + Vue 3开发的跨平台Host文件管理工具。支持可视化编辑、备份恢复、批量管理等操作，让Host文件管理更加便捷高效。
 
-## Recommended IDE Setup
+## 主要功能
 
-- [VS Code](https://code.visualstudio.com/) + [Vue - Official](https://marketplace.visualstudio.com/items?itemName=Vue.volar) + [Tauri](https://marketplace.visualstudio.com/items?itemName=tauri-apps.tauri-vscode) + [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer)
+- 📝 可视化编辑Host映射规则
+- 🔄 实时刷新和保存更改
+- 💾 自动备份和恢复功能
+- 🚀 支持IP和域名格式验证
+- 🎯 跨平台支持（Windows/macOS）
+
+## 快速开始
+
+```bash
+npm install
+npm run tauri dev
+```
+
+## 技术栈
+
+- 前端：Vue 3 + TypeScript + Vite
+- 后端：Rust + Tauri
+- 界面：原生CSS + 响应式设计
