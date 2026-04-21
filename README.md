@@ -22,3 +22,4 @@ npm run tauri dev
 - 前端：Vue 3 + TypeScript + Vite
 - 后端：Rust + Tauri
 - 界面：原生CSS + 响应式设计
+- test
